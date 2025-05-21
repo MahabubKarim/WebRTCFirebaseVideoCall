@@ -18,6 +18,8 @@ android {
         versionName "1.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+
+        buildConfigField("String", "FIREBASE_REALTIME_DATABASE_URL", "\"https://webrtcfirebasevideocall-3751e-default-rtdb.asia-southeast1.firebasedatabase.app/\"")
     }
 
     buildTypes {
@@ -26,15 +28,22 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_11
         targetCompatibility JavaVersion.VERSION_11
     }
+
     kotlinOptions {
         jvmTarget = '11'
     }
+
     viewBinding{
-        enabled=true
+        enabled = true
+    }
+
+    buildFeatures {
+        buildConfig = true
     }
 }
 

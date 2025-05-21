@@ -4,6 +4,7 @@ import android.content.Context
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 import com.google.gson.Gson
+import com.mmk.webrtcfirebasevideocall.BuildConfig
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -25,7 +26,8 @@ class AppModule {
 
     @Provides
     @Singleton
-    fun provideDataBaseInstance():FirebaseDatabase = FirebaseDatabase.getInstance("https://webrtcfirebasevideocall-3751e-default-rtdb.asia-southeast1.firebasedatabase.app/")
+    fun provideDataBaseInstance():FirebaseDatabase = FirebaseDatabase
+        .getInstance(BuildConfig.FIREBASE_REALTIME_DATABASE_URL)
 
     @Provides
     @Singleton

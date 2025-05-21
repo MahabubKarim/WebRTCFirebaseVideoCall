@@ -4,14 +4,14 @@
     android:layout_width="match_parent"
     android:layout_height="60dp"
     android:layout_marginHorizontal="8dp"
-    android:layout_marginVertical="8dp"
+    android:layout_marginVertical="4dp"
     android:elevation="5dp"
     app:cardCornerRadius="12dp">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="60dp"
-        android:background="#343b36">
+        android:background="#202C20">
 
         <ImageView
             android:id="@+id/profileImageView"

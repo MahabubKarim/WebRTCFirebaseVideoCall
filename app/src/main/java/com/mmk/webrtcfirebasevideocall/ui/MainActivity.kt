@@ -7,6 +7,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.mmk.webrtcfirebasevideocall.adapter.MainRecyclerViewAdapter
 import com.mmk.webrtcfirebasevideocall.databinding.ActivityMainBinding
 import com.mmk.webrtcfirebasevideocall.repository.MainRepository
+import com.mmk.webrtcfirebasevideocall.service.MainServiceRepository
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -16,8 +17,8 @@ class MainActivity : AppCompatActivity(), MainRecyclerViewAdapter.Listener {
 
     private var username: String? = null
     private var mainAdapter: MainRecyclerViewAdapter? = null
-    @Inject
-    lateinit var mainRepository: MainRepository
+    @Inject lateinit var mainRepository: MainRepository
+    @Inject lateinit var mainServiceRepository: MainServiceRepository
 
     private lateinit var views: ActivityMainBinding
 
@@ -47,7 +48,7 @@ class MainActivity : AppCompatActivity(), MainRecyclerViewAdapter.Listener {
     }
 
     private fun startMyService() {
-        // mainServiceRepository.startService(username!!)
+        mainServiceRepository.startService(username!!)
     }
 
     private fun setupRecyclerView() {
@@ -59,12 +60,8 @@ class MainActivity : AppCompatActivity(), MainRecyclerViewAdapter.Listener {
         }
     }
 
-    override fun onVideoCallClicked(username: String) {
+    override fun onVideoCallClicked(username: String) {}
 
-    }
-
-    override fun onAudioCallClicked(username: String) {
-
-    }
+    override fun onAudioCallClicked(username: String) {}
 
 }
