@@ -7,48 +7,51 @@
     tools:context=".ui.LoginActivity">
 
     <androidx.constraintlayout.utils.widget.ImageFilterView
+        android:id="@+id/firebaseLogo"
         android:layout_width="match_parent"
         android:layout_height="200dp"
-        android:id="@+id/firebaseLogo"
-        app:layout_constraintTop_toTopOf="parent"
+        android:layout_marginTop="20dp"
         android:src="@drawable/firebase"
-        android:layout_marginTop="20dp"/>
+        app:layout_constraintTop_toTopOf="parent" />
+
     <TextView
+        android:id="@+id/welcomeTv"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textSize="20sp"
-        app:layout_constraintTop_toBottomOf="@id/firebaseLogo"
-        android:text="Welcome to Firebase Video Call \n\n\n\n Sign in Here"
         android:gravity="center"
+        android:text="Welcome to Firebase Video Call \n\n\n\n Sign in Here"
+        android:textSize="20sp"
         android:textStyle="bold"
-        android:id="@+id/welcomeTv"/>
+        app:layout_constraintTop_toBottomOf="@id/firebaseLogo" />
+
     <EditText
+        android:id="@+id/usernameEt"
         android:layout_width="300dp"
         android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
         android:hint="Username"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="10dp"
-        android:id="@+id/usernameEt"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/welcomeTv" />
+
     <EditText
+        android:id="@+id/passwordEt"
         android:layout_width="300dp"
         android:layout_height="wrap_content"
         android:hint="Password"
         app:layout_constraintEnd_toEndOf="parent"
-        android:id="@+id/passwordEt"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/usernameEt" />
 
     <Button
+        android:id="@+id/btn"
         android:layout_width="200dp"
-        android:text="Sign In"
-        android:layout_marginTop="20dp"
         android:layout_height="wrap_content"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="20dp"
+        android:text="Sign In"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/passwordEt"
-        android:id="@+id/btn"/>
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/passwordEt" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

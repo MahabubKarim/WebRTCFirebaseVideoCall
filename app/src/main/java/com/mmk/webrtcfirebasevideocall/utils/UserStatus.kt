@@ -1,4 +1,5 @@
 package com.mmk.webrtcfirebasevideocall.utils
 
-class UserStatus {
+enum class UserStatus {
+    ONLINE,OFFLINE,IN_CALL
 }

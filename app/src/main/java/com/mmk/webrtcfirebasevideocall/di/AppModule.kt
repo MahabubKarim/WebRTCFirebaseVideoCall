@@ -9,20 +9,25 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
 class AppModule {
 
     @Provides
+    @Singleton
     fun provideContext(@ApplicationContext context:Context) : Context = context.applicationContext
 
     @Provides
+    @Singleton
     fun provideGson():Gson = Gson()
 
     @Provides
-    fun provideDataBaseInstance():FirebaseDatabase = FirebaseDatabase.getInstance()
+    @Singleton
+    fun provideDataBaseInstance():FirebaseDatabase = FirebaseDatabase.getInstance("https://webrtcfirebasevideocall-3751e-default-rtdb.asia-southeast1.firebasedatabase.app/")
 
     @Provides
+    @Singleton
     fun provideDatabaseReference(db:FirebaseDatabase): DatabaseReference = db.reference
 }
