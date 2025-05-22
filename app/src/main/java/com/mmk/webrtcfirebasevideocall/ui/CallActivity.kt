@@ -1,12 +1,18 @@
 package com.mmk.webrtcfirebasevideocall.ui
 
+import android.annotation.SuppressLint
+import android.content.Intent
+import android.media.projection.MediaProjectionManager
+import android.os.Build
 import android.os.Bundle
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
 import com.mmk.webrtcfirebasevideocall.databinding.ActivityCallBinding
 import com.mmk.webrtcfirebasevideocall.service.MainService
 import com.mmk.webrtcfirebasevideocall.service.MainServiceRepository
 import com.mmk.webrtcfirebasevideocall.utils.convertToHumanTime
+import com.mmk.webrtcfirebasevideocall.utils.getMediaProjectionPermission
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -15,8 +21,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
+
 @AndroidEntryPoint
 class CallActivity : AppCompatActivity() {
+    private val REQUEST_CODE_MEDIA_PROJECTION: Int = 2
     private var target: String? = null
     private var isVideoCall: Boolean = true
     private var isCaller: Boolean = true
@@ -67,7 +75,18 @@ class CallActivity : AppCompatActivity() {
             }
             MainService.remoteSurfaceView = remoteView
             MainService.localSurfaceView = localView
-            serviceRepository.setupViews(isVideoCall, isCaller, target!!)
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                getMediaProjectionPermission {
+                    val mediaProjectionManager =
+                        getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
+                    val intent = mediaProjectionManager.createScreenCaptureIntent()
+                    startActivityForResult(intent, REQUEST_CODE_MEDIA_PROJECTION)
+                    //startMyService()
+                }
+            } else {
+                serviceRepository.setupViews(isVideoCall, isCaller, target!!)
+            }
 
             endCallButton.setOnClickListener {
                 serviceRepository.sendEndCall()
@@ -84,5 +103,20 @@ class CallActivity : AppCompatActivity() {
         MainService.endCallListener = this*/
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == REQUEST_CODE_MEDIA_PROJECTION && resultCode == RESULT_OK && data != null) {
+            // Save this intent somewhere accessible (e.g. in your Service companion)
+            // MainService.screenPermissionIntent = data
+            serviceRepository.setupViews(isVideoCall, isCaller, target!!)
+        }
+    }
+
+    @SuppressLint("GestureBackNavigation")
+    override fun onBackPressed() {
+        super.onBackPressed()
+        serviceRepository.stopService()
+    }
 
 }

@@ -1,8 +1,6 @@
 package com.mmk.webrtcfirebasevideocall.firebaseclient
 
-import android.util.Log
 import com.google.firebase.database.DataSnapshot
-import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.DatabaseReference
 import com.google.gson.Gson
 import com.mmk.webrtcfirebasevideocall.utils.DataModel
@@ -16,7 +14,8 @@ import javax.inject.Singleton
 
 @Singleton
 class FirebaseClient @Inject constructor(
-    private val dbRef: DatabaseReference, private val gson: Gson
+    private val dbRef: DatabaseReference,
+    private val gson: Gson
 ) {
     private var currentUsername: String? = null
     private fun setUsername(username: String) {
@@ -24,82 +23,69 @@ class FirebaseClient @Inject constructor(
     }
 
     fun login(username: String, password: String, done: (Boolean, String?) -> Unit) {
-        dbRef.addListenerForSingleValueEvent(object : MyEventListener() {
-
+        dbRef.addListenerForSingleValueEvent(object  : MyEventListener(){
             override fun onDataChange(snapshot: DataSnapshot) {
-                try {
-                    Log.d("FIREBASE", "onDataChange called with snapshot: ${snapshot.value}")
-                    //if the current user exists
-                    if (snapshot.hasChild(username)) {
-                        //user exists , its time to check the password
-                        val dbPassword = snapshot.child(username).child(PASSWORD).value
-                        if (password == dbPassword) {
-                            //password is correct and sign in
-                            dbRef.child(username).child(STATUS).setValue(UserStatus.ONLINE)
-                                .addOnCompleteListener {
-                                    setUsername(username)
-                                    done(true, null)
-                                }.addOnFailureListener {
-                                    done(false, "${it.message}")
-                                }
-                        } else {
-                            //password is wrong, notify user
-                            done(false, "Password is wrong")
-                        }
-
-                    } else {
-                        //user doesn't exist, register the user
-                        dbRef.child(username).child(PASSWORD).setValue(password)
+                //if the current user exists
+                if (snapshot.hasChild(username)){
+                    //user exists , its time to check the password
+                    val dbPassword = snapshot.child(username).child(PASSWORD).value
+                    if (password == dbPassword) {
+                        //password is correct and sign in
+                        dbRef.child(username).child(STATUS).setValue(UserStatus.ONLINE)
                             .addOnCompleteListener {
-                                dbRef.child(username).child(STATUS).setValue(UserStatus.ONLINE)
-                                    .addOnCompleteListener {
-                                        setUsername(username)
-                                        done(true, null)
-                                    }.addOnFailureListener {
-                                        done(false, it.message)
-                                    }
+                                setUsername(username)
+                                done(true,null)
                             }.addOnFailureListener {
-                                done(false, it.message)
+                                done(false,"${it.message}")
                             }
+                    }else{
+                        //password is wrong, notify user
+                        done(false,"Password is wrong")
                     }
-                } catch (e: Exception) {
-                    Log.e("FIREBASE", "Error occurred during login operation: ${e.message}")
-                    done(
-                        false, "An error occurred while processing your request. Please try again."
-                    )
-                }
-            }
 
-            override fun onCancelled(error: DatabaseError) {
-                Log.e("FIREBASE", "onCancelled called: ${error.message}")
-                done(false, "Database operation was cancelled: ${error.message}")
+                }else{
+                    //user doesnt exist, register the user
+                    dbRef.child(username).child(PASSWORD).setValue(password).addOnCompleteListener {
+                        dbRef.child(username).child(STATUS).setValue(UserStatus.ONLINE)
+                            .addOnCompleteListener {
+                                setUsername(username)
+                                done(true,null)
+                            }.addOnFailureListener {
+                                done(false,it.message)
+                            }
+                    }.addOnFailureListener {
+                        done(false,it.message)
+                    }
+
+                }
             }
         })
     }
 
     /**
      * Subscribe for latest event on the current user.
-     * @param listener: callback to be called when a new event is received
+     * @param firebaseClientListener: callback to be called when a new event is received
      * @see DataModel
      */
-    fun subscribeForLatestEvent(listener: Listener) {
+    fun subscribeForLatestEvent(firebaseClientListener: FirebaseClientListener){
         try {
-            dbRef.child(currentUsername!!).child(LATEST_EVENT)
-                .addValueEventListener(object : MyEventListener() {
+            dbRef.child(currentUsername!!).child(LATEST_EVENT).addValueEventListener(
+                object : MyEventListener() {
                     override fun onDataChange(snapshot: DataSnapshot) {
                         super.onDataChange(snapshot)
                         val event = try {
-                            gson.fromJson(snapshot.value.toString(), DataModel::class.java)
-                        } catch (e: Exception) {
+                            gson.fromJson(snapshot.value.toString(),DataModel::class.java)
+                        }catch (e:Exception){
                             e.printStackTrace()
                             null
                         }
                         event?.let {
-                            listener.onLatestEventReceived(it)
+                            firebaseClientListener.onLatestEventReceived(it)
                         }
                     }
-                })
-        } catch (e: Exception) {
+                }
+            )
+        }catch (e:Exception){
             e.printStackTrace()
         }
     }
@@ -109,7 +95,7 @@ class FirebaseClient @Inject constructor(
      * @param message: the message to send
      * @param success: a callback to be called when the message is sent successfully
      */
-    fun sendMessageToOtherClient(message: DataModel, success: (Boolean) -> Unit) {
+    fun sendMessageToOtherClient(message:DataModel, success:(Boolean) -> Unit){
         val convertedMessage = gson.toJson(message.copy(sender = currentUsername))
         dbRef.child(message.target).child(LATEST_EVENT).setValue(convertedMessage)
             .addOnCompleteListener {
@@ -143,13 +129,17 @@ class FirebaseClient @Inject constructor(
         })
     }
 
+    fun logOff(function:()->Unit) {
+        dbRef.child(currentUsername!!).child(STATUS).setValue(UserStatus.OFFLINE)
+            .addOnCompleteListener { function() }
+    }
 
     /**
      * A listener that receives the latest event sent to the current user.
      * @author Mahabub Karim
      * @see DataModel
      */
-    interface Listener {
+    interface FirebaseClientListener {
         fun onLatestEventReceived(event: DataModel)
     }
 }

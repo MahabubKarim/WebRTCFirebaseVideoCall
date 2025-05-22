@@ -1,9 +1,9 @@
 package com.mmk.webrtcfirebasevideocall.repository
 
+import android.content.Intent
 import com.google.gson.Gson
 import com.mmk.webrtcfirebasevideocall.firebaseclient.FirebaseClient
 import com.mmk.webrtcfirebasevideocall.utils.DataModel
-import com.mmk.webrtcfirebasevideocall.utils.DataModelType
 import com.mmk.webrtcfirebasevideocall.utils.DataModelType.*
 import com.mmk.webrtcfirebasevideocall.utils.UserStatus
 import com.mmk.webrtcfirebasevideocall.webrtc.MyPeerObserver
@@ -21,7 +21,7 @@ class MainRepository @Inject constructor(
     private val gson: Gson
 ) : WebRTCClient.WebRTCClientListener {
     private var target: String? = null
-    var listener: Listener? = null
+    var mainRepositoryListener: MainRepositoryListener? = null
 
     private var remoteView: SurfaceViewRenderer? = null
 
@@ -34,11 +34,11 @@ class MainRepository @Inject constructor(
     }
 
     fun initFirebase() {
-        firebaseClient.subscribeForLatestEvent(object : FirebaseClient.Listener {
+        firebaseClient.subscribeForLatestEvent(object : FirebaseClient.FirebaseClientListener {
             override fun onLatestEventReceived(event: DataModel) {
-                listener?.onLatestEventReceived(event)
+                mainRepositoryListener?.onLatestEventReceived(event)
                 when (event.type) {
-                    Offer -> {
+                    Offer->{
                         webRTCClient.onRemoteSessionReceived(
                             SessionDescription(
                                 SessionDescription.Type.OFFER,
@@ -47,7 +47,7 @@ class MainRepository @Inject constructor(
                         )
                         webRTCClient.answer(target!!)
                     }
-                    Answer -> {
+                    Answer->{
                         webRTCClient.onRemoteSessionReceived(
                             SessionDescription(
                                 SessionDescription.Type.ANSWER,
@@ -55,23 +55,23 @@ class MainRepository @Inject constructor(
                             )
                         )
                     }
-                    IceCandidates -> {
+                    IceCandidates->{
                         val candidate: IceCandidate? = try {
-                            gson.fromJson(event.data.toString(), IceCandidate::class.java)
-                        } catch(e: Exception) {
+                            gson.fromJson(event.data.toString(),IceCandidate::class.java)
+                        }catch (e:Exception){
                             null
                         }
                         candidate?.let {
                             webRTCClient.addIceCandidateToPeer(it)
                         }
                     }
-                    EndCall -> {
-                        listener?.onCallEnded()
+                    EndCall->{
+                        mainRepositoryListener?.endCall()
                     }
-                    StartAudioCall -> {}
-                    StartVideoCall -> {}
+                    else -> Unit
                 }
             }
+
         })
     }
 
@@ -89,20 +89,22 @@ class MainRepository @Inject constructor(
     }
 
     fun initWebrtcClient(username: String) {
-        webRTCClient.listener = this
+        webRTCClient.webRTCClientListener = this
         webRTCClient.initializeWebrtcClient(username, object : MyPeerObserver() {
-            override fun onAddStream(mediaStream: MediaStream?) {
-                super.onAddStream(mediaStream)
+
+            override fun onAddStream(p0: MediaStream?) {
+                super.onAddStream(p0)
                 try {
-                    mediaStream?.videoTracks?.get(0)?.addSink(remoteView)
-                } catch (e: Exception) {
+                    p0?.videoTracks?.get(0)?.addSink(remoteView)
+                }catch (e:Exception){
                     e.printStackTrace()
                 }
+
             }
 
-            override fun onIceCandidate(iceCandidate: IceCandidate?) {
-                super.onIceCandidate(iceCandidate)
-                iceCandidate?.let {
+            override fun onIceCandidate(p0: IceCandidate?) {
+                super.onIceCandidate(p0)
+                p0?.let {
                     webRTCClient.sendIceCandidate(target!!, it)
                 }
             }
@@ -110,9 +112,9 @@ class MainRepository @Inject constructor(
             override fun onConnectionChange(newState: PeerConnection.PeerConnectionState?) {
                 super.onConnectionChange(newState)
                 if (newState == PeerConnection.PeerConnectionState.CONNECTED) {
-                    // change my status to in call
+                    // 1. change my status to in call
                     changeMyStatus(UserStatus.IN_CALL)
-                    // clear latest event inside my user section in firebase database
+                    // 2. clear latest event inside my user section in firebase database
                     firebaseClient.clearLatestEvent()
                 }
             }
@@ -166,8 +168,22 @@ class MainRepository @Inject constructor(
         firebaseClient.sendMessageToOtherClient(data) {}
     }
 
-    interface Listener {
+    fun setScreenCaptureIntent(screenPermissionIntent: Intent) {
+        webRTCClient.setPermissionIntent(screenPermissionIntent)
+    }
+
+    fun toggleScreenShare(isStarting: Boolean) {
+        if (isStarting){
+            webRTCClient.startScreenCapturing()
+        }else{
+            webRTCClient.stopScreenCapturing()
+        }
+    }
+
+    fun logOff(function: () -> Unit) = firebaseClient.logOff(function)
+
+    interface MainRepositoryListener {
         fun onLatestEventReceived(event: DataModel)
-        fun onCallEnded()
+        fun endCall()
     }
 }

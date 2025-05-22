@@ -2,12 +2,10 @@ package com.mmk.webrtcfirebasevideocall.service
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
 import android.os.Build
 import android.os.IBinder
-import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.mmk.webrtcfirebasevideocall.R
 import com.mmk.webrtcfirebasevideocall.repository.MainRepository
@@ -21,7 +19,7 @@ import javax.inject.Inject
 
 
 @AndroidEntryPoint
-class MainService : Service(), MainRepository.Listener {
+class MainService : Service(), MainRepository.MainRepositoryListener {
 
     private val TAG = "MainService"
 
@@ -30,7 +28,7 @@ class MainService : Service(), MainRepository.Listener {
     private var isPreviousCallStateVideo = true
 
     companion object {
-        var listener: CallReceiveListener? = null
+        var callReceiveListener: CallReceiveListener? = null
         //var endCallListener:EndCallListener?=null
         var localSurfaceView: SurfaceViewRenderer?=null
         var remoteSurfaceView: SurfaceViewRenderer?=null
@@ -56,9 +54,7 @@ class MainService : Service(), MainRepository.Listener {
         intent?.let { incomingIntent ->
             when (incomingIntent.action) {
                 START_SERVICE.name -> handleStartService(incomingIntent)
-                SETUP_VIEWS.name -> {
-                    handleSetupViews(incomingIntent)
-                }
+                SETUP_VIEWS.name -> handleSetupViewsAndStartCall(incomingIntent)
                 /*END_CALL.name -> handleEndCall()
                 SWITCH_CAMERA.name -> handleSwitchCamera()
                 TOGGLE_AUDIO.name -> handleToggleAudio(incomingIntent)
@@ -72,7 +68,7 @@ class MainService : Service(), MainRepository.Listener {
         return START_STICKY
     }
 
-    private fun handleSetupViews(incomingIntent: Intent) {
+    private fun handleSetupViewsAndStartCall(incomingIntent: Intent) {
         val isCaller = incomingIntent.getBooleanExtra("isCaller",false)
         val isVideoCall = incomingIntent.getBooleanExtra("isVideoCall",true)
         val target = incomingIntent.getStringExtra("target")
@@ -97,7 +93,7 @@ class MainService : Service(), MainRepository.Listener {
             startServiceWithNotification()
 
             //setup my clients
-            mainRepository.listener = this
+            mainRepository.mainRepositoryListener = this
             mainRepository.initFirebase()
             mainRepository.initWebrtcClient(username!!)
         }
@@ -127,25 +123,19 @@ class MainService : Service(), MainRepository.Listener {
         }
     }
 
-    override fun onLatestEventReceived(event: DataModel) {
-        if(event.isValid()) {
-            when (event.type) {
+    override fun onLatestEventReceived(data: DataModel) {
+        if (data.isValid()) {
+            when (data.type) {
+                StartVideoCall,
                 StartAudioCall -> {
-                    listener?.onCallReceived(event)
+                    callReceiveListener?.onCallReceived(data)
                 }
-                StartVideoCall -> {
-                    listener?.onCallReceived(event)
-                }
-                Offer -> {}
-                Answer -> {}
-                IceCandidates -> {}
-                EndCall -> {}
+                else -> Unit
             }
         }
-        Log.d(TAG, "onLatestEventReceived: $event")
     }
 
-    override fun onCallEnded() {
+    override fun endCall() {
 
     }
 

@@ -1,5 +1,6 @@
 package com.mmk.webrtcfirebasevideocall.ui
 
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.media.projection.MediaProjectionManager
 import android.os.Build
@@ -17,7 +18,7 @@ import com.mmk.webrtcfirebasevideocall.service.MainServiceRepository
 import com.mmk.webrtcfirebasevideocall.utils.DataModel
 import com.mmk.webrtcfirebasevideocall.utils.DataModelType
 import com.mmk.webrtcfirebasevideocall.utils.getCameraAndMicPermission
-import com.mmk.webrtcfirebasevideocall.utils.getMediaProjectionAndCaptureAudioOutputPermission
+import com.mmk.webrtcfirebasevideocall.utils.getMediaProjectionPermission
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -27,8 +28,10 @@ class MainActivity : AppCompatActivity(), MainRecyclerViewAdapter.Listener,
     MainService.CallReceiveListener {
     private val TAG = "MainActivity"
     private val REQUEST_CODE_MEDIA_PROJECTION: Int = 1
-    @Inject lateinit var mainRepository: MainRepository
-    @Inject lateinit var mainServiceRepository: MainServiceRepository
+    @Inject
+    lateinit var mainRepository: MainRepository
+    @Inject
+    lateinit var mainServiceRepository: MainServiceRepository
     private var username: String? = null
     private var mainAdapter: MainRecyclerViewAdapter? = null
     private lateinit var views: ActivityMainBinding
@@ -55,7 +58,7 @@ class MainActivity : AppCompatActivity(), MainRecyclerViewAdapter.Listener,
         subscribeObservers()
         // start foreground service to listen negotiations and calls.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            getMediaProjectionAndCaptureAudioOutputPermission {
+            getMediaProjectionPermission {
                 val mediaProjectionManager =
                     getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
                 val intent = mediaProjectionManager.createScreenCaptureIntent()
@@ -70,12 +73,17 @@ class MainActivity : AppCompatActivity(), MainRecyclerViewAdapter.Listener,
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == REQUEST_CODE_MEDIA_PROJECTION && resultCode == RESULT_OK
-            && data != null) {
+        if (requestCode == REQUEST_CODE_MEDIA_PROJECTION && resultCode == RESULT_OK && data != null) {
             // Save this intent somewhere accessible (e.g. in your Service companion)
             MainService.screenPermissionIntent = data
             startMyService()
         }
+    }
+
+    @SuppressLint("GestureBackNavigation")
+    override fun onBackPressed() {
+        super.onBackPressed()
+        mainServiceRepository.stopService()
     }
 
     /**
@@ -84,7 +92,7 @@ class MainActivity : AppCompatActivity(), MainRecyclerViewAdapter.Listener,
      */
     private fun subscribeObservers() {
         setupRecyclerView()
-        MainService.listener = this
+        MainService.callReceiveListener = this
         mainRepository.observeUsersStatus {
             Log.d(TAG, "subscribeObservers: $it")
             mainAdapter?.updateList(it)
@@ -149,13 +157,13 @@ class MainActivity : AppCompatActivity(), MainRecyclerViewAdapter.Listener,
         getCameraAndMicPermission {
             // Send a connection request for a audio call to the specified username
             mainRepository.sendConnectionRequest(username, false) {
-                if (it){
+                if (it) {
                     // If the connection is successful, start the CallActivity Pass the target
                     // username, call type (Audio call), and caller status (isCaller)
-                    startActivity(Intent(this,CallActivity::class.java).apply {
-                        putExtra("target",username)
-                        putExtra("isVideoCall",false)
-                        putExtra("isCaller",true)
+                    startActivity(Intent(this, CallActivity::class.java).apply {
+                        putExtra("target", username)
+                        putExtra("isVideoCall", false)
+                        putExtra("isCaller", true)
                     })
                 }
             }
@@ -181,10 +189,10 @@ class MainActivity : AppCompatActivity(), MainRecyclerViewAdapter.Listener,
                     getCameraAndMicPermission {
                         incomingCallLayout.isVisible = false
                         //create an intent to go to video call activity
-                        startActivity(Intent(this@MainActivity,CallActivity::class.java).apply {
-                            putExtra("target",dataModel.sender)
-                            putExtra("isVideoCall",isVideoCall)
-                            putExtra("isCaller",false)
+                        startActivity(Intent(this@MainActivity, CallActivity::class.java).apply {
+                            putExtra("target", dataModel.sender)
+                            putExtra("isVideoCall", isVideoCall)
+                            putExtra("isCaller", false)
                         })
                     }
                 }

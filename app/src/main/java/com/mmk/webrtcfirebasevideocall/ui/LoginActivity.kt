@@ -15,9 +15,7 @@ import javax.inject.Inject
 
 @AndroidEntryPoint
 class LoginActivity : AppCompatActivity() {
-
     private lateinit var views: ActivityLoginBinding
-
     @Inject lateinit var mainRepository: MainRepository
 
     override fun onCreate(savedInstanceState: Bundle?) {

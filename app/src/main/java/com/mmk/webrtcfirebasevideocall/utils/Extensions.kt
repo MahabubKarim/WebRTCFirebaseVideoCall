@@ -25,11 +25,9 @@ fun AppCompatActivity.getCameraAndMicPermission(success: () -> Unit) {
 }
 
 @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
-fun AppCompatActivity.getMediaProjectionAndCaptureAudioOutputPermission(success: () -> Unit) {
+fun AppCompatActivity.getMediaProjectionPermission(success: () -> Unit) {
     PermissionX.init(this).permissions(
             Manifest.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION,
-            Manifest.permission.CAMERA,
-            Manifest.permission.RECORD_AUDIO
         ).request { allGranted, _, _ ->
             if (allGranted) {
                 success()
