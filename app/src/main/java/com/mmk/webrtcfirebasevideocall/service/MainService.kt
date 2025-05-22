@@ -7,19 +7,25 @@ import android.app.Service
 import android.content.Intent
 import android.os.Build
 import android.os.IBinder
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.mmk.webrtcfirebasevideocall.R
+import com.mmk.webrtcfirebasevideocall.repository.MainRepository
 import dagger.hilt.android.AndroidEntryPoint
 import com.mmk.webrtcfirebasevideocall.service.MainServiceActions.*
+import com.mmk.webrtcfirebasevideocall.utils.DataModel
+import javax.inject.Inject
 
 
 @AndroidEntryPoint
-class MainService : Service() {
+class MainService : Service(), MainRepository.Listener {
 
     private val TAG = "MainService"
 
     private var isServiceRunning = false
     private var username: String? = null
+
+    @Inject lateinit var mainRepository: MainRepository
 
     private lateinit var notificationManager: NotificationManager
 
@@ -60,8 +66,8 @@ class MainService : Service() {
             startServiceWithNotification()
 
             //setup my clients
-            //mainRepository.listener = this
-            //.initFirebase()
+            mainRepository.listener = this
+            mainRepository.initFirebase()
             //mainRepository.initWebrtcClient(username!!)
 
         }
@@ -87,5 +93,9 @@ class MainService : Service() {
 
             startForeground(1, notification.build())
         }
+    }
+
+    override fun onLatestEventReceived(event: DataModel) {
+        Log.d(TAG, "onLatestEventReceived: $event")
     }
 }
