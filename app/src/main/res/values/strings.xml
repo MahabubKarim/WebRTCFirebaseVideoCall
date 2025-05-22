@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">WebRTCFirebaseVideoCall</string>
+    <string name="online">Online</string>
+    <string name="offline">Offline</string>
+    <string name="in_call">In Call</string>
+    <string name="camera_and_mic_required">camera and mic permission is required</string>
 </resources>

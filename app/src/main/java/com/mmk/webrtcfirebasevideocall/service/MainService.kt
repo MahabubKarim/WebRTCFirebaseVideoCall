@@ -14,6 +14,9 @@ import com.mmk.webrtcfirebasevideocall.repository.MainRepository
 import dagger.hilt.android.AndroidEntryPoint
 import com.mmk.webrtcfirebasevideocall.service.MainServiceActions.*
 import com.mmk.webrtcfirebasevideocall.utils.DataModel
+import com.mmk.webrtcfirebasevideocall.utils.DataModelType.*
+import com.mmk.webrtcfirebasevideocall.utils.isValid
+import org.webrtc.SurfaceViewRenderer
 import javax.inject.Inject
 
 
@@ -24,6 +27,15 @@ class MainService : Service(), MainRepository.Listener {
 
     private var isServiceRunning = false
     private var username: String? = null
+    private var isPreviousCallStateVideo = true
+
+    companion object {
+        var listener: CallReceiveListener? = null
+        //var endCallListener:EndCallListener?=null
+        var localSurfaceView: SurfaceViewRenderer?=null
+        var remoteSurfaceView: SurfaceViewRenderer?=null
+        var screenPermissionIntent : Intent?=null
+    }
 
     @Inject lateinit var mainRepository: MainRepository
 
@@ -44,8 +56,10 @@ class MainService : Service(), MainRepository.Listener {
         intent?.let { incomingIntent ->
             when (incomingIntent.action) {
                 START_SERVICE.name -> handleStartService(incomingIntent)
-                /*SETUP_VIEWS.name -> handleSetupViews(incomingIntent)
-                END_CALL.name -> handleEndCall()
+                SETUP_VIEWS.name -> {
+                    handleSetupViews(incomingIntent)
+                }
+                /*END_CALL.name -> handleEndCall()
                 SWITCH_CAMERA.name -> handleSwitchCamera()
                 TOGGLE_AUDIO.name -> handleToggleAudio(incomingIntent)
                 TOGGLE_VIDEO.name -> handleToggleVideo(incomingIntent)
@@ -58,6 +72,23 @@ class MainService : Service(), MainRepository.Listener {
         return START_STICKY
     }
 
+    private fun handleSetupViews(incomingIntent: Intent) {
+        val isCaller = incomingIntent.getBooleanExtra("isCaller",false)
+        val isVideoCall = incomingIntent.getBooleanExtra("isVideoCall",true)
+        val target = incomingIntent.getStringExtra("target")
+        this.isPreviousCallStateVideo = isVideoCall
+        mainRepository.setTarget(target!!)
+        // initialize our widgets and start streaming our video and audio source
+        // and get prepared for call
+        mainRepository.initLocalSurfaceView(localSurfaceView!!, isVideoCall)
+        mainRepository.initRemoteSurfaceView(remoteSurfaceView!!)
+
+        if (!isCaller){ // if we are not the caller, we start the call to callee
+            //start the video call
+            mainRepository.startCall()
+        }
+    }
+
     private fun handleStartService(incomingIntent: Intent) {
         //start our foreground service
         if (!isServiceRunning) {
@@ -68,8 +99,7 @@ class MainService : Service(), MainRepository.Listener {
             //setup my clients
             mainRepository.listener = this
             mainRepository.initFirebase()
-            //mainRepository.initWebrtcClient(username!!)
-
+            mainRepository.initWebrtcClient(username!!)
         }
     }
 
@@ -89,13 +119,38 @@ class MainService : Service(), MainRepository.Listener {
             val notification = NotificationCompat.Builder(
                 this, "channel1"
             ).setSmallIcon(R.mipmap.ic_launcher)
+                .setContentTitle("Call Service")
+                .setContentText("Running in background")
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
                 //.addAction(R.drawable.ic_end_call,"Exit",pendingIntent)
-
             startForeground(1, notification.build())
         }
     }
 
     override fun onLatestEventReceived(event: DataModel) {
+        if(event.isValid()) {
+            when (event.type) {
+                StartAudioCall -> {
+                    listener?.onCallReceived(event)
+                }
+                StartVideoCall -> {
+                    listener?.onCallReceived(event)
+                }
+                Offer -> {}
+                Answer -> {}
+                IceCandidates -> {}
+                EndCall -> {}
+            }
+        }
         Log.d(TAG, "onLatestEventReceived: $event")
     }
+
+    override fun onCallEnded() {
+
+    }
+
+    interface CallReceiveListener {
+        fun onCallReceived(model: DataModel)
+    }
+
 }

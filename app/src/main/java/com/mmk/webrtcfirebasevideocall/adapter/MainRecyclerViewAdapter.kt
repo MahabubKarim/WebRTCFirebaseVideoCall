@@ -67,28 +67,25 @@ class MainRecyclerViewAdapter(private val listener: Listener) :
                             audioCallClicked.invoke(user.first)
                         }
                         statusTv.setTextColor(context.resources.getColor(R.color.light_green, null))
-                        statusTv.text = "Online"
+                        statusTv.text = context.getString(R.string.online)
                     }
 
                     "OFFLINE" -> {
                         videoCallBtn.isVisible = false
                         audioCallBtn.isVisible = false
                         statusTv.setTextColor(context.resources.getColor(R.color.red, null))
-                        statusTv.text = "Offline"
+                        statusTv.text = context.getString(R.string.offline)
                     }
 
                     "IN_CALL" -> {
                         videoCallBtn.isVisible = false
                         audioCallBtn.isVisible = false
                         statusTv.setTextColor(context.resources.getColor(R.color.yellow, null))
-                        statusTv.text = "In Call"
+                        statusTv.text = context.getString(R.string.in_call)
                     }
                 }
-
                 usernameTv.text = user.first
             }
-
-
         }
     }
 }

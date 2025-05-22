@@ -8,12 +8,10 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.CAMERA" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
-    <uses-permission
-        android:name="android.permission.CAPTURE_VIDEO_OUTPUT"
-        tools:ignore="ProtectedPermissions" />
 
     <application
         android:name=".MyApplication"
@@ -37,10 +35,12 @@
         </activity>
 
         <activity
+            android:theme="@style/Theme.FirebaseVideoCall"
             android:name=".ui.MainActivity"
             android:exported="true" />
 
         <activity
+            android:theme="@style/Theme.FirebaseVideoCall"
             android:name=".ui.CallActivity"
             android:exported="true" />
 
@@ -48,11 +48,14 @@
             android:name=".ui.CloseActivity"
             android:exported="true" />
 
-        <receiver android:name=".service.MainServiceReceiver" />
+        <receiver android:name=".service.MainServiceReceiver"
+            android:exported="true"/>
 
         <service
             android:name=".service.MainService"
-            android:foregroundServiceType="mediaProjection" />
+            android:foregroundServiceType="mediaProjection"
+            android:exported="false"
+            android:permission="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
 
     </application>
 
