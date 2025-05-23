@@ -7,6 +7,7 @@ import android.util.DisplayMetrics
 import android.util.Log
 import android.view.WindowManager
 import com.google.gson.Gson
+import com.mmk.webrtcfirebasevideocall.BuildConfig
 import com.mmk.webrtcfirebasevideocall.utils.DataModel
 import com.mmk.webrtcfirebasevideocall.utils.DataModelType
 import org.webrtc.*
@@ -27,9 +28,12 @@ class WebRTCClient @Inject constructor(
     private val peerConnectionFactory by lazy { createPeerConnectionFactory() }
     private var peerConnection: PeerConnection? = null
     private val iceServer = listOf(
-        PeerConnection.IceServer.builder("turn:a.relay.metered.ca:443?transport=tcp")
+        /*PeerConnection.IceServer.builder("turn:a.relay.metered.ca:443?transport=tcp")
             .setUsername("83eebabf8b4cce9d5dbcb649")
-            .setPassword("2D7JvfkOQtBdYW3R").createIceServer()
+            .setPassword("2D7JvfkOQtBdYW3R").createIceServer()*/
+        // Don't forget to use same Network for both mobile devices.
+        PeerConnection.IceServer.builder("stun:${BuildConfig.MY_IP_ADDRESS}:3478")
+            .createIceServer()
     )
     private val localVideoSource by lazy { peerConnectionFactory.createVideoSource(false) }
     private val localAudioSource by lazy { peerConnectionFactory.createAudioSource(MediaConstraints())}
@@ -237,7 +241,6 @@ class WebRTCClient @Inject constructor(
             }?:throw IllegalStateException()
         }
     private fun stopCapturingCamera(){
-
         videoCapturer.dispose()
         localVideoTrack?.removeSink(localSurfaceView)
         localSurfaceView.clearImage()

@@ -19,6 +19,7 @@ android {
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
+        buildConfigField("String", "MY_IP_ADDRESS", "\"192.168.68.113\"") // https://whatismyipaddress.com/
         buildConfigField("String", "FIREBASE_REALTIME_DATABASE_URL", "\"https://webrtcfirebasevideocall-3751e-default-rtdb.asia-southeast1.firebasedatabase.app/\"")
     }
 

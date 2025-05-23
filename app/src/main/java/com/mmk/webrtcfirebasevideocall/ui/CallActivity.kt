@@ -77,13 +77,13 @@ class CallActivity : AppCompatActivity() {
             MainService.localSurfaceView = localView
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                getMediaProjectionPermission {
+               // getMediaProjectionPermission {
                     val mediaProjectionManager =
                         getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
                     val intent = mediaProjectionManager.createScreenCaptureIntent()
                     startActivityForResult(intent, REQUEST_CODE_MEDIA_PROJECTION)
                     //startMyService()
-                }
+                //}
             } else {
                 serviceRepository.setupViews(isVideoCall, isCaller, target!!)
             }

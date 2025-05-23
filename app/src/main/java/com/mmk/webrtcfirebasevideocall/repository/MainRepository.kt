@@ -14,7 +14,9 @@ import org.webrtc.PeerConnection
 import org.webrtc.SessionDescription
 import org.webrtc.SurfaceViewRenderer
 import javax.inject.Inject
+import javax.inject.Singleton
 
+@Singleton
 class MainRepository @Inject constructor(
     private val firebaseClient: FirebaseClient,
     private val webRTCClient: WebRTCClient,
