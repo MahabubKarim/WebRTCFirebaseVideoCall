@@ -3,9 +3,22 @@ package com.mmk.webrtcfirebasevideocall.service
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import com.mmk.webrtcfirebasevideocall.ui.CloseActivity
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
-class MainServiceReceiver  : BroadcastReceiver() {
-    override fun onReceive(p0: Context?, p1: Intent?) {
-        TODO("Not yet implemented")
+@AndroidEntryPoint
+class MainServiceReceiver : BroadcastReceiver() {
+
+    @Inject lateinit var serviceRepository: MainServiceRepository
+
+    override fun onReceive(context: Context?, intent: Intent?) {
+        if (intent?.action == "ACTION_EXIT"){
+            // we want to exit the whole application
+            serviceRepository.stopService()
+            context?.startActivity(Intent(context, CloseActivity::class.java))
+
+        }
+
     }
 }
