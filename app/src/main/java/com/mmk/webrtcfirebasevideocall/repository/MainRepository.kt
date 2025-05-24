@@ -37,14 +37,14 @@ class MainRepository @Inject constructor(
 
     fun initFirebase() {
         firebaseClient.subscribeForLatestEvent(object : FirebaseClient.FirebaseClientListener {
-            override fun onLatestEventReceived(event: DataModel) {
-                mainRepositoryListener?.onLatestEventReceived(event)
-                when (event.type) {
+            override fun onLatestEventReceived(dataModel: DataModel) {
+                mainRepositoryListener?.onLatestEventReceived(dataModel)
+                when (dataModel.type) {
                     Offer->{
                         webRTCClient.onRemoteSessionReceived(
                             SessionDescription(
                                 SessionDescription.Type.OFFER,
-                                event.data.toString()
+                                dataModel.data.toString()
                             )
                         )
                         webRTCClient.answer(target!!)
@@ -53,13 +53,13 @@ class MainRepository @Inject constructor(
                         webRTCClient.onRemoteSessionReceived(
                             SessionDescription(
                                 SessionDescription.Type.ANSWER,
-                                event.data.toString()
+                                dataModel.data.toString()
                             )
                         )
                     }
                     IceCandidates->{
                         val candidate: IceCandidate? = try {
-                            gson.fromJson(event.data.toString(),IceCandidate::class.java)
+                            gson.fromJson(dataModel.data.toString(),IceCandidate::class.java)
                         }catch (e:Exception){
                             null
                         }

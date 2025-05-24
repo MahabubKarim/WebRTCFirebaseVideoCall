@@ -221,9 +221,9 @@ class WebRTCClient @Inject constructor(
         }
     }
 
-    fun initRemoteSurfaceView(view: SurfaceViewRenderer) {
-        this.remoteSurfaceView = view
-        initSurfaceView(view)
+    fun initRemoteSurfaceView(remoteView: SurfaceViewRenderer) {
+        this.remoteSurfaceView = remoteView
+        initSurfaceView(remoteView)
     }
 
     fun initLocalSurfaceView(localView: SurfaceViewRenderer, isVideoCall: Boolean) {

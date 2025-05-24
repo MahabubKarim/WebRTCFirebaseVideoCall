@@ -92,7 +92,7 @@ class MainService : Service(), MainRepository.MainRepositoryListener {
         mainRepository.initLocalSurfaceView(localSurfaceView!!, isVideoCall)
         mainRepository.initRemoteSurfaceView(remoteSurfaceView!!)
 
-        if (!isCaller){ // if we are not the caller, we start the call to callee
+        if (!isCaller){ // we start the call to callee
             //start the video call
             mainRepository.startCall()
         }
