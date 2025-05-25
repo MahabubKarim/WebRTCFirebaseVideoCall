@@ -1,0 +1,71 @@
+@startuml
+package com.mmk.webrtcfirebasevideocall.webrtc {
+
+    class WebRTCClient {
+        - context: Context
+        - gson: Gson
+        - username: String
+        - eglBaseContext: EglBase.Context
+        - peerConnectionFactory: PeerConnectionFactory
+        - peerConnection: PeerConnection
+        - iceServer: List<IceServer>
+        - localVideoSource: VideoSource
+        - localAudioSource: AudioSource
+        - videoCapturer: CameraVideoCapturer
+        - surfaceTextureHelper: SurfaceTextureHelper
+        - mediaConstraint: MediaConstraints
+        - localSurfaceView: SurfaceViewRenderer
+        - remoteSurfaceView: SurfaceViewRenderer
+        - localStream: MediaStream
+        - localTrackId: String
+        - localStreamId: String
+        - localAudioTrack: AudioTrack
+        - localVideoTrack: VideoTrack
+        - permissionIntent: Intent
+        - screenCapturer: VideoCapturer
+        - localScreenVideoSource: VideoSource
+        - localScreenShareVideoTrack: VideoTrack
+        - webRTCClientListener: WebRTCClientListener
+
+        + initializeWebrtcClient(username: String, observer: PeerConnection.Observer): void
+        + call(target: String): void
+        + answer(target: String): void
+        + onRemoteSessionReceived(sessionDescription: SessionDescription): void
+        + addIceCandidateToPeer(iceCandidate: IceCandidate): void
+        + sendIceCandidate(target: String, iceCandidate: IceCandidate): void
+        + closeConnection(): void
+        + switchCamera(): void
+        + toggleAudio(shouldBeMuted: Boolean): void
+        + toggleVideo(shouldBeMuted: Boolean): void
+        + initRemoteSurfaceView(remoteView: SurfaceViewRenderer): void
+        + initLocalSurfaceView(localView: SurfaceViewRenderer, isVideoCall: Boolean): void
+        + setPermissionIntent(screenPermissionIntent: Intent): void
+        + startScreenCapturing(): void
+        + stopScreenCapturing(): void
+    }
+
+    interface WebRTCClientListener {
+        + onTransferEventToSocket(data: DataModel): void
+    }
+
+    WebRTCClient --> WebRTCClientListener
+    WebRTCClient --> Context
+    WebRTCClient --> Gson
+    WebRTCClient --> PeerConnectionFactory
+    WebRTCClient --> PeerConnection
+    WebRTCClient --> AudioTrack
+    WebRTCClient --> VideoTrack
+    WebRTCClient --> MediaStream
+    WebRTCClient --> SurfaceViewRenderer
+    WebRTCClient --> SurfaceTextureHelper
+    WebRTCClient --> MediaConstraints
+    WebRTCClient --> CameraVideoCapturer
+    WebRTCClient --> VideoCapturer
+    WebRTCClient --> SessionDescription
+    WebRTCClient --> IceCandidate
+    WebRTCClient --> Intent
+    WebRTCClient --> DataModel
+
+}
+
+@enduml

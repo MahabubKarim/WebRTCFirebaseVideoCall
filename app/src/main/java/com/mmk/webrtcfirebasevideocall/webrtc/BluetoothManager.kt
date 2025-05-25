@@ -1,283 +1,34 @@
-package com.mmk.webrtcfirebasevideocall.webrtc;
+package com.mmk.webrtcfirebasevideocall.webrtc
 
-import android.annotation.SuppressLint;
-import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothDevice;
-import android.bluetooth.BluetoothHeadset;
-import android.bluetooth.BluetoothProfile;
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
-import android.content.pm.PackageManager;
-import android.media.AudioManager;
-import android.os.Handler;
-import android.os.Looper;
-import android.os.Process;
-import android.util.Log;
+import android.annotation.SuppressLint
+import android.bluetooth.*
+import android.content.*
+import android.content.pm.PackageManager
+import android.media.AudioManager
+import android.os.*
+import android.util.Log
+import org.webrtc.ThreadUtils
 
-import org.webrtc.ThreadUtils;
-
-import java.util.List;
-import java.util.Set;
-
-/**
- * Improved BluetoothManager with proper resource cleanup
- */
 @SuppressLint("MissingPermission")
-public class BluetoothManager {
-    private static final String TAG = "BluetoothManager";
-    private static final int BLUETOOTH_SCO_TIMEOUT_MS = 4000;
-    private static final int MAX_SCO_CONNECTION_ATTEMPTS = 2;
+class BluetoothManager private constructor(
+    private val context: Context,
+    private val audioManager: RTCAudioManager
+) {
 
-    private final Context context;
-    private final RTCAudioManager audioManager;
-    private final AudioManager androidAudioManager;
-    private final Handler handler;
-    private final BluetoothProfile.ServiceListener serviceListener;
-    private final BroadcastReceiver headsetReceiver;
+    //region Companion Object
+    companion object {
+        private const val TAG = "BluetoothManager"
+        private const val BLUETOOTH_SCO_TIMEOUT_MS = 4000
+        private const val MAX_SCO_CONNECTION_ATTEMPTS = 2
 
-    private int scoConnectionAttempts;
-    private State state = State.UNINITIALIZED;
-    private BluetoothAdapter bluetoothAdapter;
-    private BluetoothHeadset bluetoothHeadset;
-    private BluetoothDevice connectedDevice;
-    private final Runnable timeoutRunnable = this::handleBluetoothTimeout;
-
-    public static BluetoothManager create(Context context, RTCAudioManager audioManager) {
-        return new BluetoothManager(context, audioManager);
-    }
-
-    private BluetoothManager(Context context, RTCAudioManager audioManager) {
-        ThreadUtils.checkIsOnMainThread();
-        this.context = context.getApplicationContext();
-        this.audioManager = audioManager;
-        this.androidAudioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
-        this.handler = new Handler(Looper.getMainLooper());
-        this.serviceListener = new BluetoothServiceListener();
-        this.headsetReceiver = new BluetoothHeadsetReceiver();
-    }
-
-    public State getState() {
-        ThreadUtils.checkIsOnMainThread();
-        return state;
-    }
-
-    @SuppressLint("MissingPermission")
-    public void start() {
-        ThreadUtils.checkIsOnMainThread();
-
-        if (!hasPermission()) {
-            Log.w(TAG, "Bluetooth permission not granted");
-            return;
-        }
-
-        if (state != State.UNINITIALIZED) {
-            Log.w(TAG, "Already started, current state: " + state);
-            return;
-        }
-
-        resetBluetoothState();
-        bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-
-        if (bluetoothAdapter == null) {
-            Log.w(TAG, "Device doesn't support Bluetooth");
-            return;
-        }
-
-        if (!androidAudioManager.isBluetoothScoAvailableOffCall()) {
-            Log.w(TAG, "Bluetooth SCO not available off call");
-            return;
-        }
-
-        logBluetoothInfo();
-
-        if (!setupBluetoothProfileProxy()) {
-            Log.e(TAG, "Failed to setup Bluetooth profile proxy");
-            return;
-        }
-
-        registerBluetoothReceivers();
-        state = State.HEADSET_UNAVAILABLE;
-    }
-
-    public void stop() {
-        ThreadUtils.checkIsOnMainThread();
-
-        if (state == State.UNINITIALIZED) {
-            return;
-        }
-
-        stopScoAudio();
-        cleanupBluetoothResources();
-        state = State.UNINITIALIZED;
-    }
-
-    /**
-     * New method: Completely releases all Bluetooth resources
-     */
-    public void release() {
-        ThreadUtils.checkIsOnMainThread();
-        stop();
-
-        // Additional cleanup if needed
-        handler.removeCallbacksAndMessages(null);
-
-        // Clear all references
-        connectedDevice = null;
-        bluetoothAdapter = null;
-        bluetoothHeadset = null;
-    }
-
-    public boolean startScoAudio() {
-        ThreadUtils.checkIsOnMainThread();
-
-        if (scoConnectionAttempts >= MAX_SCO_CONNECTION_ATTEMPTS) {
-            Log.w(TAG, "Max SCO connection attempts reached");
-            return false;
-        }
-
-        if (state != State.HEADSET_AVAILABLE) {
-            Log.w(TAG, "Cannot start SCO, wrong state: " + state);
-            return false;
-        }
-
-        state = State.SCO_CONNECTING;
-        androidAudioManager.startBluetoothSco();
-        androidAudioManager.setBluetoothScoOn(true);
-        scoConnectionAttempts++;
-        startTimer();
-        return true;
-    }
-
-    public void stopScoAudio() {
-        ThreadUtils.checkIsOnMainThread();
-
-        if (state != State.SCO_CONNECTING && state != State.SCO_CONNECTED) {
-            return;
-        }
-
-        cancelTimer();
-        androidAudioManager.stopBluetoothSco();
-        androidAudioManager.setBluetoothScoOn(false);
-        state = State.SCO_DISCONNECTING;
-    }
-
-    public void updateDevice() {
-        ThreadUtils.checkIsOnMainThread();
-
-        if (state == State.UNINITIALIZED || bluetoothHeadset == null) {
-            return;
-        }
-
-        List<BluetoothDevice> devices = bluetoothHeadset.getConnectedDevices();
-        if (devices.isEmpty()) {
-            connectedDevice = null;
-            state = State.HEADSET_UNAVAILABLE;
-        } else {
-            connectedDevice = devices.get(0);
-            state = State.HEADSET_AVAILABLE;
-        }
-        audioManager.updateAudioDeviceState();
-    }
-
-    private void resetBluetoothState() {
-        bluetoothHeadset = null;
-        connectedDevice = null;
-        scoConnectionAttempts = 0;
-    }
-
-    private boolean hasPermission() {
-        return context.checkPermission(
-                android.Manifest.permission.BLUETOOTH,
-                Process.myPid(),
-                Process.myUid()
-        ) == PackageManager.PERMISSION_GRANTED;
-    }
-
-    private void logBluetoothInfo() {
-        if (bluetoothAdapter == null) return;
-
-        Set<BluetoothDevice> pairedDevices = bluetoothAdapter.getBondedDevices();
-        Log.d(TAG, "Bluetooth adapter: " + bluetoothAdapter.toString());
-        Log.d(TAG, "Paired devices count: " + pairedDevices.size());
-    }
-
-    private boolean setupBluetoothProfileProxy() {
-        return bluetoothAdapter.getProfileProxy(context, serviceListener, BluetoothProfile.HEADSET);
-    }
-
-    private void registerBluetoothReceivers() {
-        try {
-            IntentFilter filter = new IntentFilter();
-            filter.addAction(BluetoothHeadset.ACTION_CONNECTION_STATE_CHANGED);
-            filter.addAction(BluetoothHeadset.ACTION_AUDIO_STATE_CHANGED);
-            context.registerReceiver(headsetReceiver, filter);
-        } catch (Exception e) {
-            Log.e(TAG, "Failed to register Bluetooth receiver", e);
+        fun create(context: Context, audioManager: RTCAudioManager): BluetoothManager {
+            return BluetoothManager(context.applicationContext, audioManager)
         }
     }
+    //endregion
 
-    private void unregisterBluetoothReceivers() {
-        try {
-            context.unregisterReceiver(headsetReceiver);
-        } catch (Exception e) {
-            Log.e(TAG, "Failed to unregister Bluetooth receiver", e);
-        }
-    }
-
-    private void cleanupBluetoothResources() {
-        unregisterBluetoothReceivers();
-        cancelTimer();
-
-        if (bluetoothHeadset != null && bluetoothAdapter != null) {
-            try {
-                bluetoothAdapter.closeProfileProxy(BluetoothProfile.HEADSET, bluetoothHeadset);
-            } catch (Exception e) {
-                Log.e(TAG, "Error closing Bluetooth profile proxy", e);
-            }
-            bluetoothHeadset = null;
-        }
-    }
-
-    private void startTimer() {
-        handler.postDelayed(timeoutRunnable, BLUETOOTH_SCO_TIMEOUT_MS);
-    }
-
-    private void cancelTimer() {
-        handler.removeCallbacks(timeoutRunnable);
-    }
-
-    private void handleBluetoothTimeout() {
-        ThreadUtils.checkIsOnMainThread();
-
-        if (state == State.UNINITIALIZED || bluetoothHeadset == null || state != State.SCO_CONNECTING) {
-            return;
-        }
-
-        boolean scoConnected = false;
-        List<BluetoothDevice> devices = bluetoothHeadset.getConnectedDevices();
-
-        if (!devices.isEmpty()) {
-            connectedDevice = devices.get(0);
-            scoConnected = bluetoothHeadset.isAudioConnected(connectedDevice);
-        }
-
-        if (scoConnected) {
-            state = State.SCO_CONNECTED;
-            scoConnectionAttempts = 0;
-        } else {
-            stopScoAudio();
-        }
-
-        audioManager.updateAudioDeviceState();
-    }
-
-    private boolean isScoOn() {
-        return androidAudioManager.isBluetoothScoOn();
-    }
-
-    public enum State {
+    //region Enum
+    enum class State {
         UNINITIALIZED,
         ERROR,
         HEADSET_UNAVAILABLE,
@@ -286,72 +37,290 @@ public class BluetoothManager {
         SCO_CONNECTING,
         SCO_CONNECTED
     }
+    //endregion
 
-    private class BluetoothServiceListener implements BluetoothProfile.ServiceListener {
-        @Override
-        public void onServiceConnected(int profile, BluetoothProfile proxy) {
-            if (profile != BluetoothProfile.HEADSET || state == State.UNINITIALIZED) {
-                return;
-            }
+    //region Member Variables
+    private val androidAudioManager: AudioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+    private val handler = Handler(Looper.getMainLooper())
+    private var scoConnectionAttempts = 0
+    var state: State = State.UNINITIALIZED
+    private var bluetoothAdapter: BluetoothAdapter? = null
+    private var bluetoothHeadset: BluetoothHeadset? = null
+    private var connectedDevice: BluetoothDevice? = null
+    private val timeoutRunnable = Runnable { handleBluetoothTimeout() }
+    //endregion
 
-            bluetoothHeadset = (BluetoothHeadset) proxy;
-            audioManager.updateAudioDeviceState();
+    //region Listeners
+
+    // Listens for Bluetooth headset service connection and disconnection
+    private val serviceListener = object : BluetoothProfile.ServiceListener {
+        override fun onServiceConnected(profile: Int, proxy: BluetoothProfile) {
+            if (profile != BluetoothProfile.HEADSET || state == State.UNINITIALIZED) return
+            bluetoothHeadset = proxy as BluetoothHeadset
+            audioManager.updateAudioDeviceState()
         }
 
-        @Override
-        public void onServiceDisconnected(int profile) {
-            if (profile != BluetoothProfile.HEADSET || state == State.UNINITIALIZED) {
-                return;
-            }
-
-            stopScoAudio();
-            bluetoothHeadset = null;
-            connectedDevice = null;
-            state = State.HEADSET_UNAVAILABLE;
-            audioManager.updateAudioDeviceState();
+        override fun onServiceDisconnected(profile: Int) {
+            if (profile != BluetoothProfile.HEADSET || state == State.UNINITIALIZED) return
+            stopScoAudio()
+            bluetoothHeadset = null
+            connectedDevice = null
+            state = State.HEADSET_UNAVAILABLE
+            audioManager.updateAudioDeviceState()
         }
     }
 
-    private class BluetoothHeadsetReceiver extends BroadcastReceiver {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            if (state == State.UNINITIALIZED) {
-                return;
-            }
+    // Receives Bluetooth headset connection and audio state changes
+    private val headsetReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            if (state == State.UNINITIALIZED) return
 
-            String action = intent.getAction();
-            if (BluetoothHeadset.ACTION_CONNECTION_STATE_CHANGED.equals(action)) {
-                handleConnectionStateChange(intent);
-            } else if (BluetoothHeadset.ACTION_AUDIO_STATE_CHANGED.equals(action)) {
-                handleAudioStateChange(intent);
+            when (intent.action) {
+                BluetoothHeadset.ACTION_CONNECTION_STATE_CHANGED -> handleConnectionStateChange(intent)
+                BluetoothHeadset.ACTION_AUDIO_STATE_CHANGED -> handleAudioStateChange(intent)
             }
         }
 
-        private void handleConnectionStateChange(Intent intent) {
-            int state = intent.getIntExtra(BluetoothHeadset.EXTRA_STATE, BluetoothHeadset.STATE_DISCONNECTED);
-
-            if (state == BluetoothHeadset.STATE_CONNECTED) {
-                scoConnectionAttempts = 0;
-                audioManager.updateAudioDeviceState();
-            } else if (state == BluetoothHeadset.STATE_DISCONNECTED) {
-                stopScoAudio();
-                audioManager.updateAudioDeviceState();
-            }
-        }
-
-        private void handleAudioStateChange(Intent intent) {
-            int state = intent.getIntExtra(BluetoothHeadset.EXTRA_STATE, BluetoothHeadset.STATE_AUDIO_DISCONNECTED);
-
-            if (state == BluetoothHeadset.STATE_AUDIO_CONNECTED) {
-                cancelTimer();
-                if (BluetoothManager.this.state == State.SCO_CONNECTING) {
-                    BluetoothManager.this.state = State.SCO_CONNECTED;
-                    scoConnectionAttempts = 0;
-                    audioManager.updateAudioDeviceState();
+        // Handles headset connection or disconnection
+        private fun handleConnectionStateChange(intent: Intent) {
+            when (intent.getIntExtra(BluetoothHeadset.EXTRA_STATE, BluetoothHeadset.STATE_DISCONNECTED)) {
+                BluetoothHeadset.STATE_CONNECTED -> {
+                    scoConnectionAttempts = 0
+                    audioManager.updateAudioDeviceState()
                 }
-            } else if (state == BluetoothHeadset.STATE_AUDIO_DISCONNECTED && !isInitialStickyBroadcast()) {
-                audioManager.updateAudioDeviceState();
+                BluetoothHeadset.STATE_DISCONNECTED -> {
+                    stopScoAudio()
+                    audioManager.updateAudioDeviceState()
+                }
+            }
+        }
+
+        // Handles SCO audio connection or disconnection
+        private fun handleAudioStateChange(intent: Intent) {
+            when (intent.getIntExtra(BluetoothHeadset.EXTRA_STATE, BluetoothHeadset.STATE_AUDIO_DISCONNECTED)) {
+                BluetoothHeadset.STATE_AUDIO_CONNECTED -> {
+                    cancelTimer()
+                    if (state == State.SCO_CONNECTING) {
+                        state = State.SCO_CONNECTED
+                        scoConnectionAttempts = 0
+                        audioManager.updateAudioDeviceState()
+                    }
+                }
+                BluetoothHeadset.STATE_AUDIO_DISCONNECTED -> {
+                    if (!isInitialStickyBroadcast) {
+                        audioManager.updateAudioDeviceState()
+                    }
+                }
             }
         }
     }
+    //endregion
+
+    //region Lifecycle Methods
+
+    /**
+     * Initializes and starts the BluetoothManager. Registers receivers and checks permissions.
+     */
+    @SuppressLint("MissingPermission")
+    fun start() {
+        ThreadUtils.checkIsOnMainThread()
+
+        if (!hasPermission()) {
+            Log.w(TAG, "Bluetooth permission not granted")
+            return
+        }
+
+        if (state != State.UNINITIALIZED) {
+            Log.w(TAG, "Already started, current state: $state")
+            return
+        }
+
+        resetBluetoothState()
+        bluetoothAdapter = BluetoothAdapter.getDefaultAdapter().also {
+            if (it == null) {
+                Log.w(TAG, "Device doesn't support Bluetooth")
+                return
+            }
+
+            if (!androidAudioManager.isBluetoothScoAvailableOffCall) {
+                Log.w(TAG, "Bluetooth SCO not available off call")
+                return
+            }
+
+            logBluetoothInfo(it)
+
+            if (!it.getProfileProxy(context, serviceListener, BluetoothProfile.HEADSET)) {
+                Log.e(TAG, "Failed to setup Bluetooth profile proxy")
+                return
+            }
+        }
+
+        registerBluetoothReceivers()
+        state = State.HEADSET_UNAVAILABLE
+    }
+
+    /**
+     * Stops Bluetooth SCO and unregisters resources.
+     */
+    fun stop() {
+        ThreadUtils.checkIsOnMainThread()
+        if (state == State.UNINITIALIZED) return
+
+        stopScoAudio()
+        cleanupBluetoothResources()
+        state = State.UNINITIALIZED
+    }
+
+    /**
+     * Fully releases resources and cleans up.
+     */
+    fun release() {
+        ThreadUtils.checkIsOnMainThread()
+        stop()
+        handler.removeCallbacksAndMessages(null)
+        connectedDevice = null
+        bluetoothAdapter = null
+        bluetoothHeadset = null
+    }
+    //endregion
+
+    //region Public API Methods
+
+    /**
+     * Attempts to start SCO audio connection.
+     * @return true if the request was initiated, false otherwise.
+     */
+    fun startScoAudio(): Boolean {
+        ThreadUtils.checkIsOnMainThread()
+
+        if (scoConnectionAttempts >= MAX_SCO_CONNECTION_ATTEMPTS) {
+            Log.w(TAG, "Max SCO connection attempts reached")
+            return false
+        }
+
+        if (state != State.HEADSET_AVAILABLE) {
+            Log.w(TAG, "Cannot start SCO, wrong state: $state")
+            return false
+        }
+
+        state = State.SCO_CONNECTING
+        androidAudioManager.startBluetoothSco()
+        androidAudioManager.isBluetoothScoOn = true
+        scoConnectionAttempts++
+        startTimer()
+        return true
+    }
+
+    /**
+     * Stops SCO audio if it is currently active or connecting.
+     */
+    fun stopScoAudio() {
+        ThreadUtils.checkIsOnMainThread()
+        if (state != State.SCO_CONNECTING && state != State.SCO_CONNECTED) return
+
+        cancelTimer()
+        androidAudioManager.stopBluetoothSco()
+        androidAudioManager.isBluetoothScoOn = false
+        state = State.SCO_DISCONNECTING
+    }
+
+    /**
+     * Updates the currently connected Bluetooth device and state.
+     */
+    fun updateDevice() {
+        ThreadUtils.checkIsOnMainThread()
+        if (state == State.UNINITIALIZED || bluetoothHeadset == null) return
+
+        bluetoothHeadset?.connectedDevices?.let { devices ->
+            if (devices.isEmpty()) {
+                connectedDevice = null
+                state = State.HEADSET_UNAVAILABLE
+            } else {
+                connectedDevice = devices[0]
+                state = State.HEADSET_AVAILABLE
+            }
+            audioManager.updateAudioDeviceState()
+        }
+    }
+    //endregion
+
+    //region Private Methods
+
+    private fun resetBluetoothState() {
+        bluetoothHeadset = null
+        connectedDevice = null
+        scoConnectionAttempts = 0
+    }
+
+    private fun hasPermission() = context.checkPermission(
+        android.Manifest.permission.BLUETOOTH,
+        Process.myPid(),
+        Process.myUid()
+    ) == PackageManager.PERMISSION_GRANTED
+
+    private fun logBluetoothInfo(adapter: BluetoothAdapter) {
+        Log.d(TAG, "Bluetooth adapter: $adapter")
+        Log.d(TAG, "Paired devices count: ${adapter.bondedDevices.size}")
+    }
+
+    private fun registerBluetoothReceivers() {
+        try {
+            context.registerReceiver(headsetReceiver, IntentFilter().apply {
+                addAction(BluetoothHeadset.ACTION_CONNECTION_STATE_CHANGED)
+                addAction(BluetoothHeadset.ACTION_AUDIO_STATE_CHANGED)
+            })
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to register Bluetooth receiver", e)
+        }
+    }
+
+    private fun unregisterBluetoothReceivers() {
+        try {
+            context.unregisterReceiver(headsetReceiver)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to unregister Bluetooth receiver", e)
+        }
+    }
+
+    private fun cleanupBluetoothResources() {
+        unregisterBluetoothReceivers()
+        cancelTimer()
+
+        bluetoothAdapter?.let { adapter ->
+            bluetoothHeadset?.let { headset ->
+                try {
+                    adapter.closeProfileProxy(BluetoothProfile.HEADSET, headset)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error closing Bluetooth profile proxy", e)
+                }
+            }
+        }
+        bluetoothHeadset = null
+    }
+
+    private fun startTimer() {
+        handler.postDelayed(timeoutRunnable, BLUETOOTH_SCO_TIMEOUT_MS.toLong())
+    }
+
+    private fun cancelTimer() {
+        handler.removeCallbacks(timeoutRunnable)
+    }
+
+    private fun handleBluetoothTimeout() {
+        ThreadUtils.checkIsOnMainThread()
+        if (state == State.UNINITIALIZED || bluetoothHeadset == null || state != State.SCO_CONNECTING) return
+
+        val isConnected = bluetoothHeadset?.connectedDevices?.firstOrNull()?.let { device ->
+            bluetoothHeadset?.isAudioConnected(device) == true
+        } ?: false
+
+        if (isConnected) {
+            state = State.SCO_CONNECTED
+            scoConnectionAttempts = 0
+        } else {
+            stopScoAudio()
+        }
+        audioManager.updateAudioDeviceState()
+    }
+    //endregion
 }

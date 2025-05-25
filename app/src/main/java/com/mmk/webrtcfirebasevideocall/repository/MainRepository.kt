@@ -4,7 +4,12 @@ import android.content.Intent
 import com.google.gson.Gson
 import com.mmk.webrtcfirebasevideocall.firebaseclient.FirebaseClient
 import com.mmk.webrtcfirebasevideocall.utils.DataModel
-import com.mmk.webrtcfirebasevideocall.utils.DataModelType.*
+import com.mmk.webrtcfirebasevideocall.utils.DataModelType.Answer
+import com.mmk.webrtcfirebasevideocall.utils.DataModelType.EndCall
+import com.mmk.webrtcfirebasevideocall.utils.DataModelType.IceCandidates
+import com.mmk.webrtcfirebasevideocall.utils.DataModelType.Offer
+import com.mmk.webrtcfirebasevideocall.utils.DataModelType.StartAudioCall
+import com.mmk.webrtcfirebasevideocall.utils.DataModelType.StartVideoCall
 import com.mmk.webrtcfirebasevideocall.utils.UserStatus
 import com.mmk.webrtcfirebasevideocall.webrtc.MyPeerObserver
 import com.mmk.webrtcfirebasevideocall.webrtc.WebRTCClient
@@ -40,36 +45,38 @@ class MainRepository @Inject constructor(
             override fun onLatestEventReceived(dataModel: DataModel) {
                 mainRepositoryListener?.onLatestEventReceived(dataModel)
                 when (dataModel.type) {
-                    Offer->{
+                    Offer -> {
                         webRTCClient.onRemoteSessionReceived(
                             SessionDescription(
-                                SessionDescription.Type.OFFER,
-                                dataModel.data.toString()
+                                SessionDescription.Type.OFFER, dataModel.data.toString()
                             )
                         )
                         webRTCClient.answer(target!!)
                     }
-                    Answer->{
+
+                    Answer -> {
                         webRTCClient.onRemoteSessionReceived(
                             SessionDescription(
-                                SessionDescription.Type.ANSWER,
-                                dataModel.data.toString()
+                                SessionDescription.Type.ANSWER, dataModel.data.toString()
                             )
                         )
                     }
-                    IceCandidates->{
+
+                    IceCandidates -> {
                         val candidate: IceCandidate? = try {
-                            gson.fromJson(dataModel.data.toString(),IceCandidate::class.java)
-                        }catch (e:Exception){
+                            gson.fromJson(dataModel.data.toString(), IceCandidate::class.java)
+                        } catch (e: Exception) {
                             null
                         }
                         candidate?.let {
                             webRTCClient.addIceCandidateToPeer(it)
                         }
                     }
-                    EndCall->{
+
+                    EndCall -> {
                         mainRepositoryListener?.endCall()
                     }
+
                     else -> Unit
                 }
             }
@@ -80,8 +87,7 @@ class MainRepository @Inject constructor(
     fun sendConnectionRequest(target: String, isVideoCall: Boolean, success: (Boolean) -> Unit) {
         firebaseClient.sendMessageToOtherClient(
             DataModel(
-                type = if (isVideoCall) StartVideoCall else StartAudioCall,
-                target = target
+                type = if (isVideoCall) StartVideoCall else StartAudioCall, target = target
             ), success
         )
     }
@@ -98,7 +104,7 @@ class MainRepository @Inject constructor(
                 super.onAddStream(p0)
                 try {
                     p0?.videoTracks?.get(0)?.addSink(remoteView)
-                }catch (e:Exception){
+                } catch (e: Exception) {
                     e.printStackTrace()
                 }
 
@@ -144,8 +150,7 @@ class MainRepository @Inject constructor(
     fun sendEndCall() {
         onTransferEventToSocket(
             DataModel(
-                type = EndCall,
-                target = target!!
+                type = EndCall, target = target!!
             )
         )
     }
@@ -175,9 +180,9 @@ class MainRepository @Inject constructor(
     }
 
     fun toggleScreenShare(isStarting: Boolean) {
-        if (isStarting){
+        if (isStarting) {
             webRTCClient.startScreenCapturing()
-        }else{
+        } else {
             webRTCClient.stopScreenCapturing()
         }
     }

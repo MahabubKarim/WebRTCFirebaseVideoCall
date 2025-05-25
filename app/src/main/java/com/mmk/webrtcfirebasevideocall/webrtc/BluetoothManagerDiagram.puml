@@ -1,0 +1,54 @@
+@startuml
+skinparam classAttributeIconSize 0
+
+package com.mmk.webrtcfirebasevideocall.webrtc {
+
+    class BluetoothManager {
+        - context: Context
+        - audioManager: RTCAudioManager
+        - androidAudioManager: AudioManager
+        - handler: Handler
+        - scoConnectionAttempts: Int
+        - state: State
+        - bluetoothAdapter: BluetoothAdapter?
+        - bluetoothHeadset: BluetoothHeadset?
+        - connectedDevice: BluetoothDevice?
+        - timeoutRunnable: Runnable
+
+        + start(): void
+        + stop(): void
+        + release(): void
+        + startScoAudio(): Boolean
+        + stopScoAudio(): void
+        + updateDevice(): void
+    }
+
+    BluetoothManager --> "1" Context
+            BluetoothManager --> "1" RTCAudioManager
+            BluetoothManager --> "1" AudioManager
+            BluetoothManager --> "1" Handler
+            BluetoothManager --> "0..1" BluetoothAdapter
+            BluetoothManager --> "0..1" BluetoothHeadset
+            BluetoothManager --> "0..1" BluetoothDevice
+            BluetoothManager --> "1" Runnable
+
+            enum State {
+        UNINITIALIZED
+        ERROR
+        HEADSET_UNAVAILABLE
+        HEADSET_AVAILABLE
+        SCO_DISCONNECTING
+        SCO_CONNECTING
+        SCO_CONNECTED
+    }
+
+    BluetoothManager --> State
+
+    class RTCAudioManager {
+        +updateAudioDeviceState(): void
+    }
+
+    BluetoothManager ..> RTCAudioManager : uses
+}
+
+@enduml

@@ -72,3 +72,4 @@ The stun:\${BuildConfig.MY_IP_ADDRESS}:3478 is used in this project.
 
 Note:  You can replace the stun:${BuildConfig.MY_IP_ADDRESS}:3478 server with other public STUN servers.  It's crucial to ensure that the STUN server is reliable for the application to function correctly.
 
+Special Thanks to [CodingWithKael](https://www.youtube.com/@codewithkael)
