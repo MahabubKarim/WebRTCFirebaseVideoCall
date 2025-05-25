@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "658427151065",
+    "project_id": "webrtcfirebasevideocall-3751e",
+    "storage_bucket": "webrtcfirebasevideocall-3751e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:658427151065:android:ee67ecaf26fab6830634c8",
+        "android_client_info": {
+          "package_name": "com.mmk.webrtcfirebasevideocall"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCLP9TFvsCHkzfGm2IavgyyvLEoyYo-nBA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
