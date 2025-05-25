@@ -39,9 +39,9 @@ jobs:
         with:
           releaseDirectory: app/build/outputs/apk/release
           signingKeyBase64: ${{ secrets.SIGNING_KEY }}
-          alias: ${{ secrets.ALIAS }}
-          keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
-          keyPassword: ${{ secrets.KEY_PASSWORD }}
+          alias: "mmm"                      # Hardcoded alias
+          keyStorePassword: "mmm@123 "    # Hardcoded password
+          keyPassword: "mmm@123"              # Hardcoded key password (if different)
         env:
           BUILD_TOOLS_VERSION: ${{ env.BUILD_TOOLS_VERSION }}
           KEYSTORE_TYPE: JKS # or PKCS12 depending on your key
