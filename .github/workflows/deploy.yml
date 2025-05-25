@@ -3,7 +3,7 @@ name: Deploy to Google Play Store
 on:
   push:
     branches:
-      - main # or your release branch
+      - master
 
 jobs:
   deploy:
