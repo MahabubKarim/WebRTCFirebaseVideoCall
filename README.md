@@ -51,6 +51,90 @@ sequenceDiagram
     end
 ```
 
+# Firebase Integration
+This application uses Firebase for user authentication and managing user status in Realtime Database.
+
+## google-services.json
+The google-services.json file is essential for connecting your Android app to your Firebase project. It contains important configuration details like your project's API keys and IDs. To obtain this file:
+
+* Go to the Firebase Console.
+* Select your project. If you don't have a project, create one.
+* Click on the Android icon to add your app.
+* Follow the instructions to register your app and download the google-services.json file.
+* Place the google-services.json file in the app/ directory of your Android project.
+* Firebase Realtime Database Setup
+* Firebase Realtime Database is used to store and synchronize data in real-time. Here’s how it's set up in this project:
+
+## Dependencies:
+Ensure that the Firebase Realtime Database KTX library is included in your build.gradle.kts file:
+
+```
+dependencies {
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.database.ktx)
+}
+```
+
+Also, make sure that you have the google-services plugin
+
+```
+plugins {
+    id("com.google.gms.google-services")
+}
+```
+
+## Database URL:
+The Firebase Realtime Database URL is configured in the BuildConfig.java file during the build process. You need to define FIREBASE_REALTIME_DATABASE_URL in your build.gradle file:
+
+```
+android {
+    defaultConfig {
+        buildConfigField("String", "FIREBASE_REALTIME_DATABASE_URL", "\"YOUR_FIREBASE_REALTIME_DATABASE_URL\"")
+    }
+}
+```
+To get your Firebase Realtime Database URL:
+
+* Go to the [Firebase Console](https://console.firebase.google.com/u/0/).
+* Select your project.
+* Navigate to "Realtime Database" in the left sidebar.
+* Find your database URL, which looks like https://YOUR_PROJECT_ID.firebaseio.com.
+* Database Instance:
+  The database instance is initialized using the URL from BuildConfig:
+  
+```
+// From [app/src/main/java/com/mmk/webrtcfirebasevideocall/di/AppModule.kt](https://github.com/MahabubKarim/WebRTCFirebaseVideoCall/blob/main/app/src/main/java/com/mmk/webrtcfirebasevideocall/di/AppModule.kt)
+@Provides
+@Singleton
+fun provideDataBaseInstance():FirebaseDatabase = FirebaseDatabase
+    .getInstance(BuildConfig.FIREBASE_REALTIME_DATABASE_URL)
+
+@Provides
+@Singleton
+fun provideDatabaseReference(db:FirebaseDatabase): DatabaseReference = db.reference
+```
+
+## Data Structure:
+The database stores user information, including their status (ONLINE, OFFLINE, IN_CALL), password, and the latest event (used for signaling):
+
+```
+{
+  "users": {
+    "username1": {
+      "status": "ONLINE",
+      "password": "password123",
+      "latest_event": { ... }
+    },
+    "username2": {
+      "status": "OFFLINE",
+      "password": "securePassword",
+      "latest_event": null
+    },
+    ...
+  }
+}
+```
+
 # Stun Server Settings
 The application uses a STUN server to discover the public IP address and port of the client, which is necessary for establishing a WebRTC connection. The STUN server settings are located in the WebRTCClient.kt file:
 
