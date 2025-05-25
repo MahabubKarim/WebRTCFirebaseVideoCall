@@ -57,7 +57,7 @@ This application uses Firebase for user authentication and managing user status 
 ## google-services.json
 The google-services.json file is essential for connecting your Android app to your Firebase project. It contains important configuration details like your project's API keys and IDs. To obtain this file:
 
-* Go to the Firebase Console.
+* Go to the [Firebase Console](https://console.firebase.google.com/u/0/).
 * Select your project. If you don't have a project, create one.
 * Click on the Android icon to add your app.
 * Follow the instructions to register your app and download the google-services.json file.
