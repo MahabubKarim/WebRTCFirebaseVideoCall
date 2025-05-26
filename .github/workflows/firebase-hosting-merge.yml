@@ -55,10 +55,8 @@ jobs:
           BUILD_TOOLS_VERSION: ${{ env.BUILD_TOOLS_VERSION }}
           KEYSTORE_TYPE: PKCS12 # or PKCS12 depending on your key
 
-      - name: Upload APK to Firebase App Distribution
-        uses: wzieba/Firebase-Distribution-Github-Action@v1
+      - name: Upload APK as Artifact
+        uses: actions/upload-artifact@v4
         with:
-          appId: ${{ secrets.FIREBASE_APP_ID }}
-          token: ${{ secrets.FIREBASE_TOKEN }}
-          groups: testers
-          file: app/build/outputs/apk/release/app-release-signed.apk
+          name: app-release
+          path: app/build/outputs/apk/release/*.apk
