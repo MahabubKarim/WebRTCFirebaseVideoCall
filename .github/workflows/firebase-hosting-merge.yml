@@ -1,4 +1,4 @@
-name: Deploy Android APK to Firebase App Distribution
+name: Generate APK for Distribution
 
 on:
   push:
@@ -50,4 +50,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: app-release
-          path: app/build/outputs/apk/release/WebRTCFirebaseVideoCall.apk
+          path: app/release/WebRTCFirebaseVideoCall.apk
