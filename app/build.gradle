@@ -37,15 +37,15 @@ android {
 
     signingConfigs {
         debug {
-            storeFile file("../wrfvc.jks")
+            storeFile file("../videocall.jks")
             storePassword "MMM@123"
-            keyAlias "MMM"
+            keyAlias "mmm"
             keyPassword "MMM@123"
         }
         release {
-            storeFile file("../wrfvc.jks")
+            storeFile file("../videocall.jks")
             storePassword "MMM@123"
-            keyAlias "MMM"
+            keyAlias "mmm"
             keyPassword "MMM@123"
         }
     }
