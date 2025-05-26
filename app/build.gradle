@@ -37,16 +37,16 @@ android {
 
     signingConfigs {
         debug {
-            storeFile file("../videocall.jks")
-            storePassword "MMM@123"
-            keyAlias "mmm"
-            keyPassword "MMM@123"
+            storeFile file("../dhaka.jks")
+            storePassword "Dhaka@2025"
+            keyAlias "dhaka"
+            keyPassword "Dhaka@2025"
         }
         release {
-            storeFile file("../videocall.jks")
-            storePassword "MMM@123"
-            keyAlias "mmm"
-            keyPassword "MMM@123"
+            storeFile file("../dhaka.jks")
+            storePassword "Dhaka@2025"
+            keyAlias "dhaka"
+            keyPassword "Dhaka@2025"
         }
     }
 
