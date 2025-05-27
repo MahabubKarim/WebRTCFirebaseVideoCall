@@ -110,6 +110,14 @@ class MainRepository @Inject constructor(
 
             }
 
+            /**
+            * How ICE Candidate Being Called
+            * WebRTC (native) → MyPeerObserver.onIceCandidate(...) → 
+            * MainRepository.onIceCandidate(...) → 
+            * WebRTCClient.sendIceCandidate(...) → 
+            * listener.onTransferEventToSocket(...) → 
+            * FirebaseClient.sendMessageToOtherClient(...)
+            */
             override fun onIceCandidate(p0: IceCandidate?) {
                 super.onIceCandidate(p0)
                 p0?.let {
