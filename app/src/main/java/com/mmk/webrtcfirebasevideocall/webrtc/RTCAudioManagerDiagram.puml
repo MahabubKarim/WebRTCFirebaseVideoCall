@@ -1,0 +1,110 @@
+@startuml
+package webrtc {
+    class RTCAudioManager {
+        - context: Context
+        - androidAudioManager: AudioManager
+        - bluetoothManager: BluetoothManager
+        - sharedPreferences: SharedPreferences
+        - eventsListener: AudioManagerEvents
+        - state: AudioManagerState
+        - savedAudioMode: int
+        - savedIsSpeakerPhoneOn: boolean
+        - savedIsMicrophoneMute: boolean
+        - hasWiredHeadset: boolean
+        - defaultAudioDevice: AudioDevice
+        - selectedAudioDevice: AudioDevice
+        - userSelectedAudioDevice: AudioDevice
+        - availableAudioDevices: Set<AudioDevice>
+        - proximitySensor: ProximitySensor
+        - wiredHeadsetReceiver: WiredHeadsetReceiver
+        - audioFocusChangeListener: OnAudioFocusChangeListener
+
+        + start(listener: AudioManagerEvents): void
+        + stop(): void
+        + release(): void
+        + setDefaultAudioDevice(device: AudioDevice): void
+        + selectAudioDevice(device: AudioDevice): void
+        + getAudioDevices(): Set<AudioDevice>
+        + getSelectedAudioDevice(): AudioDevice
+        + updateAudioDeviceState(): void
+        + onProximitySensorChanged(): void
+        + setAudioDeviceInternal(device: AudioDevice): void
+        + notifyAudioDeviceChanged(): void
+        + saveAudioState(): void
+        + restoreAudioState(): void
+        + setupAudioFocus(): void
+        + releaseAudioFocus(): void
+        + resetDeviceStates(): void
+        + registerReceivers(): void
+        + unregisterReceivers(): void
+        + hasEarpiece(): boolean
+        + checkWiredHeadset(): boolean
+        + updateBluetoothState(): void
+        + isBluetoothAvailable(): boolean
+        + adjustUserSelection(): void
+        + manageBluetoothAudio(): void
+        + selectAppropriateDevice(): AudioDevice
+
+        + static create(context: Context): RTCAudioManager
+    }
+
+    enum AudioDevice {
+        SPEAKER_PHONE
+        WIRED_HEADSET
+        EARPIECE
+        BLUETOOTH
+        NONE
+    }
+
+    enum AudioManagerState {
+        UNINITIALIZED
+        RUNNING
+    }
+
+    interface AudioManagerEvents {
+        + onAudioDeviceChanged(selectedDevice: AudioDevice, availableDevices: Set<AudioDevice>): void
+    }
+
+    class WiredHeadsetReceiver {
+        + onReceive(context: Context, intent: Intent): void
+    }
+
+    class BluetoothManager {
+        + start(): void
+        + stop(): void
+        + startScoAudio(): boolean
+        + stopScoAudio(): void
+        + updateDevice(): void
+        + release(): void
+        - state: State
+
+        + static create(context: Context, manager: RTCAudioManager): BluetoothManager
+
+        enum State {
+            HEADSET_AVAILABLE
+            HEADSET_UNAVAILABLE
+            SCO_CONNECTING
+            SCO_CONNECTED
+            SCO_DISCONNECTING
+        }
+
+    }
+
+    class ProximitySensor {
+        + stop(): void
+        + sensorReportsNearState(): boolean
+        + static create(context: Context, callback: () -> Unit): ProximitySensor
+    }
+
+    RTCAudioManager --> AudioManagerEvents
+    RTCAudioManager --> BluetoothManager
+    RTCAudioManager --> ProximitySensor
+    RTCAudioManager --> WiredHeadsetReceiver
+    RTCAudioManager --> AudioDevice
+    RTCAudioManager --> AudioManagerState
+
+    RTCAudioManager --> "1" Context
+    RTCAudioManager --> "1" AudioManager
+    RTCAudioManager --> "1" SharedPreferences
+}
+@enduml

@@ -19,7 +19,7 @@ android {
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
-        buildConfigField("String", "MY_IP_ADDRESS", "\"192.168.68.113\"") // https://whatismyipaddress.com/
+        buildConfigField("String", "MY_IP_ADDRESS", "\"202.51.177.118\"") // https://whatismyipaddress.com/
         buildConfigField("String", "FIREBASE_REALTIME_DATABASE_URL", "\"https://webrtcfirebasevideocall-3751e-default-rtdb.asia-southeast1.firebasedatabase.app/\"")
     }
 
@@ -33,6 +33,32 @@ android {
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_11
         targetCompatibility JavaVersion.VERSION_11
+    }
+
+    signingConfigs {
+        debug {
+            storeFile file("../dhaka.jks")
+            storePassword "Dhaka@2025"
+            keyAlias "dhaka"
+            keyPassword "Dhaka@2025"
+        }
+        release {
+            storeFile file("../dhaka.jks")
+            storePassword "Dhaka@2025"
+            keyAlias "dhaka"
+            keyPassword "Dhaka@2025"
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
+        }
+        debug {
+            signingConfig signingConfigs.debug
+        }
     }
 
     kotlinOptions {

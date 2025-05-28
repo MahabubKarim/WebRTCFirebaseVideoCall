@@ -9,12 +9,12 @@ class MainServiceRepository @Inject constructor(
     private val context: Context
 ) {
     fun startService(username: String) {
-        //Thread {
+        Thread {
             val intent = Intent(context, MainService::class.java)
             intent.putExtra("username", username)
             intent.action = MainServiceActions.START_SERVICE.name
             startServiceIntent(intent)
-        //}.start()
+        }.start()
     }
 
     private fun startServiceIntent(intent: Intent) {
@@ -66,6 +66,13 @@ class MainServiceRepository @Inject constructor(
         val intent = Intent(context, MainService::class.java)
         intent.action = MainServiceActions.TOGGLE_AUDIO_DEVICE.name
         intent.putExtra("type",type)
+        startServiceIntent(intent)
+    }
+
+    fun toggleScreenShare(isStarting: Boolean) {
+        val intent = Intent(context,MainService::class.java)
+        intent.action = MainServiceActions.TOGGLE_SCREEN_SHARE.name
+        intent.putExtra("isStarting",isStarting)
         startServiceIntent(intent)
     }
 
