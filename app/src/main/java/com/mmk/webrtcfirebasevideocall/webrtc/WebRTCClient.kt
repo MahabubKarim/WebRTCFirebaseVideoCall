@@ -47,8 +47,17 @@ class WebRTCClient @Inject constructor(
 
     // ICE server config (using STUN for NAT traversal)
     private val iceServer = listOf(
-        PeerConnection.IceServer.builder("stun:${BuildConfig.MY_IP_ADDRESS}:3478")
+        /*
+          urls: "turns:asia.relay.metered.ca:443?transport=tcp",
+        username: "573851d670e2e5496de76bec",
+        credential: "1VbM6LVlOBZIJsGe",
+        * */
+        PeerConnection.IceServer.builder("turns:asia.relay.metered.ca:443?transport=tcp")
+            .setUsername("573851d670e2e5496de76bec")
+            .setPassword("1VbM6LVlOBZIJsGe")
             .createIceServer()
+        /*PeerConnection.IceServer.builder("stun:${BuildConfig.MY_IP_ADDRESS}:3478")
+            .createIceServer()*/
     )
 
     // Media sources
