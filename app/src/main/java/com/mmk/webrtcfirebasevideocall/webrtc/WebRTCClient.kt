@@ -31,7 +31,7 @@ class WebRTCClient @Inject constructor(
             .setUsername("573851d670e2e5496de76bec")
             .setPassword("1VbM6LVlOBZIJsGe").createIceServer()
         /*PeerConnection.IceServer.builder("stun:${BuildConfig.MY_IP_ADDRESS}:3478")
-            .setUsername("573851d670e2e5496de76bec").setPassword("1VbM6LVlOBZIJsGe")        .createIceServer()*/
+        .createIceServer()*/
     )
     private val localVideoSource by lazy { peerConnectionFactory.createVideoSource(false) }
     private val localAudioSource by lazy { peerConnectionFactory.createAudioSource(MediaConstraints())}
