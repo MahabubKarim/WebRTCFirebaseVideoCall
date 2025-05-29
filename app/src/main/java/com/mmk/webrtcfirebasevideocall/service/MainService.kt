@@ -74,12 +74,12 @@ class MainService : Service(), MainRepository.MainRepositoryListener {
         return START_STICKY
     }
 
-    override fun onDestroy() {
+    /*override fun onDestroy() {
         rtcAudioManager.release()
         localSurfaceView = null
         remoteSurfaceView = null
         super.onDestroy()
-    }
+    }*/
 
     private fun handleSetupViewsAndStartCall(incomingIntent: Intent) {
         val isCaller = incomingIntent.getBooleanExtra("isCaller",false)

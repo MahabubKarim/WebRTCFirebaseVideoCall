@@ -1,8 +1,6 @@
 package com.mmk.webrtcfirebasevideocall.ui
 
 import android.annotation.SuppressLint
-import android.app.Activity
-import android.content.Context
 import android.content.Intent
 import android.media.projection.MediaProjectionManager
 import android.os.Build
@@ -202,7 +200,6 @@ class CallActivity : AppCompatActivity(), MainService.EndCallListener {
                 }
                 isSpeakerMode = !isSpeakerMode
             }
-
         }
     }
 
