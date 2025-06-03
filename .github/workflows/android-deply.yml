@@ -43,7 +43,7 @@ jobs:
           keyPassword: ${{ secrets.KEY_PASSWORD }}
         env:
           BUILD_TOOLS_VERSION: ${{ env.BUILD_TOOLS_VERSION }}
-          KEYSTORE_TYPE: PKCS12 # or PKCS12 depending on your key
+          KEYSTORE_TYPE: PKCS12 # or JKS depending on your key
 
       - name: Upload APK as Artifact
         uses: actions/upload-artifact@v4
